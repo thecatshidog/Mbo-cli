@@ -3,25 +3,38 @@
 const program = require('commander');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
+const exists = require('fs').existsSync;
+const download = require('download-git-repo');
+const ora = require('ora');
+const rm = require('rimraf').sync;
+
+const generator = require('../src/generator');
+
+let gitUrl = 'thecatshidog/';
+
+let tmp = './cache/';
 
 program
-  .command('init')
+  .usage('init <template-name> [project-name]')
+  .option('-c --clone', 'use git clone')
+  .option('--offline', 'use cached templated')
+
+program
+  .command('init [templateName] [appName]')
   .alias('i')
   .description('初始化项目')
-  .option('-a, --name [moduleName]', '模块名称')
-  .action(option => {
+  .action((templateName, appName) => {
     const config = {
-      moduleName: null,
+      appName: appName,
       description: '',
-      sass: false,
-      less: false
+      author: null
     }
     const promps = []
-    if (config.moduleName !== 'string') {
+    if (!config.appName) {
       promps.push({
         type: 'input',
-        name: 'moduleName',
-        message: '请输入模块名',
+        name: 'appName',
+        message: '请输入项目名:',
         validate: function (input) {
           if (!input) {
             return '不能为空';
@@ -33,36 +46,62 @@ program
     if (config.description !== 'string') {
       promps.push({
         type: 'input',
-        name: 'moduleDecription',
-        message: '请输入模块描述'
+        name: 'appDecription',
+        message: '请输入项目描述:'
       })
     }
-    if(config.sass === false && config.less === false) {
+    if(config.author !== 'string') {
       promps.push({
-        type: 'list',
-        name: 'cssPretreatment',
-        message: '想用什么css预处理器呢',
-        choices: [
-          {
-            name: 'Sass/Compass',
-            value: 'sass'
-          },
-          {
-            name: 'Less',
-            value: 'less'
+        type: 'input',
+        name: 'author',
+        message: '请输入项目负责人:',
+        validate: function (input) {
+          if (!input) {
+            return '不能为空';
           }
-        ]
+          return true;
+        }
       })
     }
     inquirer.prompt(promps).then(function (answers) {
-      console.log(answers)
+      if (config.appName) {
+        answers.appName = config.appName;
+        tmp += answers.appName;
+      }
+      gitUrl = gitUrl + templateName
+      downloadGo(gitUrl, answers);
     })
   })
   .on('--help', function() {
-    console.log(' Example');
+    console.log(' Example:');
     console.log('');
-    console.log('$ app module moduleName');
-    console.log('$ app m moduleName');
+    console.log('$ mbo init templateName appName');
+    console.log('$ mbo i templateName appName');
   });
 
-program.parse(process.argv)
+program.parse(process.argv);
+
+
+function downloadGo(template, context) {
+  const spinner = ora(`download template`);
+  spinner.start();
+  if (exists(tmp)) {
+    rm(tmp);
+  }
+  download(template, tmp, err => {
+    spinner.stop();
+    if (exists(`${tmp}/.git`)) {
+      rm(`${tmp}/.git`);
+    }
+    if (err) {
+      console.log('Failed to download repo:' + template + err.message );
+      return;
+    }
+    generator(context, tmp, `${context.appName}`);
+    console.log('');
+    console.log(`${chalk.green('SUCCESS: ')}`);
+    console.log('');
+    console.log(`${chalk.yellow(`$ cd ${context.appName}`)}`);
+    console.log(`${chalk.yellow('$ npm install')}`);
+  })
+}

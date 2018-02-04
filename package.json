@@ -30,7 +30,10 @@
     "chalk": "^2.3.0",
     "commander": "^2.13.0",
     "download-git-repo": "^1.0.2",
+    "handlebars": "^4.0.11",
     "inquirer": "^5.0.1",
+    "metalsmith": "^2.3.0",
+    "ora": "^1.4.0",
     "request": "^2.83.0",
     "rimraf": "^2.6.2"
   }
