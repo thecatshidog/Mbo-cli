@@ -1,6 +1,6 @@
 {
   "name": "mbo-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "For download Mbo template",
   "main": "index.js",
   "private": false,
